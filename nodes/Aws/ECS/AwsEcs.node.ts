@@ -17,7 +17,7 @@ export class AwsEcs implements INodeType {
 		icon: 'file:ecs.svg',
 		group: ['output'],
 		version: 1,
-		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
+		subtitle: '={{$parameter["operation"]}}',
 		description: 'Manage AWS ECS resources',
 		defaults: {
 			name: 'AWS ECS',
@@ -38,6 +38,12 @@ export class AwsEcs implements INodeType {
 				noDataExpression: true,
 				options: [
 					{
+						name: 'Describe Services',
+						value: 'describeServices',
+						description: 'Get details about one or more ECS services',
+						action: 'Describe services',
+					},
+					{
 						name: 'Force New Deployment',
 						value: 'forceNewDeployment',
 						description: 'Force a new deployment of a service',
@@ -55,7 +61,7 @@ export class AwsEcs implements INodeType {
 				},
 				displayOptions: {
 					show: {
-						operation: ['forceNewDeployment'],
+						operation: ['forceNewDeployment', 'describeServices'],
 					},
 				},
 				default: '',
@@ -82,6 +88,23 @@ export class AwsEcs implements INodeType {
 				default: '',
 				description:
 					'The name of the service to update.  Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+			},
+			{
+				displayName: 'Service Names or ARNs',
+				name: 'serviceNames',
+				type: 'string',
+				displayOptions: {
+					show: {
+						operation: ['describeServices'],
+					},
+					hide: {
+						clusterName: [''],
+					},
+				},
+				required: true,
+				default: '',
+				description:
+					'Comma-separated list of service names or ARNs to describe (max 10). E.g. "my-service-1, my-service-2".',
 			},
 			{
 				displayName: 'Desired Count',
@@ -181,28 +204,52 @@ export class AwsEcs implements INodeType {
 
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const returnData: INodeExecutionData[] = [];
-
+		const operation = this.getNodeParameter('operation', 0) as string;
 		const cluster = this.getNodeParameter('clusterName', 0);
-		const service = this.getNodeParameter('serviceName', 0);
-		const desiredCount = this.getNodeParameter('desiredCount', 0) as number;
 
-		const headers = {
-			'Content-Type': 'application/x-amz-json-1.1',
-			'X-Amz-Target': 'AmazonEC2ContainerServiceV20141113.UpdateService',
-		};
+		if (operation === 'describeServices') {
+			const serviceNamesRaw = this.getNodeParameter('serviceNames', 0) as string;
+			const services = serviceNamesRaw.split(',').map((s) => s.trim()).filter((s) => s);
 
-		const body: { cluster: unknown; service: unknown; forceNewDeployment: boolean; desiredCount?: number } = {
-			cluster: cluster,
-			service: service,
-			forceNewDeployment: true,
-		};
+			const headers = {
+				'Content-Type': 'application/x-amz-json-1.1',
+				'X-Amz-Target': 'AmazonEC2ContainerServiceV20141113.DescribeServices',
+			};
 
-		body.desiredCount = desiredCount || -1;
+			const body = {
+				cluster,
+				services,
+			};
 
-		const responseData = await awsApiRequest.call(this, 'ecs', 'POST', '/', body, headers);
+			const responseData = await awsApiRequest.call(this, 'ecs', 'POST', '/', body, headers);
 
-		if (responseData) {
-			returnData.push({ json: responseData as IDataObject });
+			if (responseData) {
+				returnData.push({ json: responseData as IDataObject });
+			}
+		} else if (operation === 'forceNewDeployment') {
+			const service = this.getNodeParameter('serviceName', 0);
+			const desiredCount = this.getNodeParameter('desiredCount', 0) as number;
+
+			const headers = {
+				'Content-Type': 'application/x-amz-json-1.1',
+				'X-Amz-Target': 'AmazonEC2ContainerServiceV20141113.UpdateService',
+			};
+
+			const body: { cluster: unknown; service: unknown; forceNewDeployment: boolean; desiredCount?: number } = {
+				cluster,
+				service,
+				forceNewDeployment: true,
+			};
+
+			if (desiredCount > 0) {
+				body.desiredCount = desiredCount;
+			}
+
+			const responseData = await awsApiRequest.call(this, 'ecs', 'POST', '/', body, headers);
+
+			if (responseData) {
+				returnData.push({ json: responseData as IDataObject });
+			}
 		}
 
 		return [returnData as INodeExecutionData[]];
