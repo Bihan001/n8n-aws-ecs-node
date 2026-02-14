@@ -25,9 +25,13 @@ npm install @bihan_c/n8n-nodes-aws-ecs
 
 Restart n8n after installation.
 
+## Credentials
+
+This node uses n8n's **built-in AWS credentials** (`aws`) — no custom credential type is bundled. This is why the `credentials` array in `package.json` is empty. Configure your AWS credentials in n8n by following the [official guide](https://docs.n8n.io/integrations/builtin/credentials/aws/).
+
 ## Prerequisites
 
-- An **AWS** credential configured in n8n ([docs](https://docs.n8n.io/integrations/builtin/credentials/aws/)).
+- An **AWS** credential configured in n8n (see above).
 - The AWS IAM user/role must have the following ECS permissions:
   - `ecs:ListClusters`
   - `ecs:ListServices`

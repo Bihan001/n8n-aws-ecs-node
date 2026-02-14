@@ -224,7 +224,7 @@ export class AwsEcs implements INodeType {
 			const responseData = await awsApiRequest.call(this, 'ecs', 'POST', '/', body, headers);
 
 			if (responseData) {
-				returnData.push({ json: responseData as IDataObject });
+				returnData.push({ json: responseData as IDataObject, pairedItem: { item: 0 } });
 			}
 		} else if (operation === 'forceNewDeployment') {
 			const service = this.getNodeParameter('serviceName', 0);
@@ -248,7 +248,7 @@ export class AwsEcs implements INodeType {
 			const responseData = await awsApiRequest.call(this, 'ecs', 'POST', '/', body, headers);
 
 			if (responseData) {
-				returnData.push({ json: responseData as IDataObject });
+				returnData.push({ json: responseData as IDataObject, pairedItem: { item: 0 } });
 			}
 		}
 
