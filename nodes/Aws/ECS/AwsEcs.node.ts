@@ -197,9 +197,7 @@ export class AwsEcs implements INodeType {
 			forceNewDeployment: true,
 		};
 
-		if (desiredCount >= 0) {
-			body.desiredCount = desiredCount;
-		}
+		body.desiredCount = desiredCount || -1;
 
 		const responseData = await awsApiRequest.call(this, 'ecs', 'POST', '/', body, headers);
 
