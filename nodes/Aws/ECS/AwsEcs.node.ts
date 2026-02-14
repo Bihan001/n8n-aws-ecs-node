@@ -87,9 +87,6 @@ export class AwsEcs implements INodeType {
 				displayName: 'Desired Count',
 				name: 'desiredCount',
 				type: 'number',
-				typeOptions: {
-					minValue: 0,
-				},
 				displayOptions: {
 					show: {
 						operation: ['forceNewDeployment'],
